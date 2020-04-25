@@ -147,7 +147,7 @@ class CustomSpotify(spotipy.Spotify):
 
 
 def main(args):
-    scope = 'playlist-read-private,playlist-read-collaborative,playlist-modify-public,playlist-modify-private,user-library-read'
+    scope = 'user-read-playback-position,playlist-read-private,playlist-read-collaborative,playlist-modify-public,playlist-modify-private,user-library-read'
     token = util.prompt_for_user_token(args.username, scope)
 
     if token:
