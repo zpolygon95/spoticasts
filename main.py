@@ -110,8 +110,12 @@ class CustomSpotify(spotipy.Spotify):
         eps_and_tracks = self.all_playlist_tracks(
             playlist_id,
             additional_types=('track', 'episode'))
-        tracks = [t['track']['id'] for t in eps_and_tracks if t['track']['type'] == 'track']
-        eps = [t['track']['id'] for t in eps_and_tracks if t['track']['type'] == 'episode']
+        tracks = [
+            t['track']['id'] for t in eps_and_tracks
+            if t['track']['type'] == 'track']
+        eps = [
+            t['track']['id'] for t in eps_and_tracks
+            if t['track']['type'] == 'episode']
         rich_eps = self.all_episodes(eps)
         finished_eps = [
             e['id'] for e in rich_eps
@@ -146,8 +150,17 @@ class CustomSpotify(spotipy.Spotify):
         return out
 
 
+scope = ','.join([
+    'user-read-playback-position',
+    'playlist-read-private',
+    'playlist-read-collaborative',
+    'playlist-modify-public',
+    'playlist-modify-private',
+    'user-library-read',
+])
+
+
 def main(args):
-    scope = 'user-read-playback-position,playlist-read-private,playlist-read-collaborative,playlist-modify-public,playlist-modify-private,user-library-read'
     token = util.prompt_for_user_token(args.username, scope)
 
     if token:
