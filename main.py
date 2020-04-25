@@ -56,6 +56,33 @@ class CustomSpotify(spotipy.Spotify):
             out += episodes
         return out
 
+    def all_current_user_playlists(self):
+        out = []
+        offset = 0
+        total = 1
+        while offset < total:
+            results = self.current_user_playlists(offset=offset)
+            playlists = results['items']
+            total = results['total']
+            offset += len(playlists)
+            out += playlists
+            print(total, offset)
+        return out
+
+    def user_playlist_id(self, pid):
+        """Get the id of a user's playlist by name or id
+
+        If `pid` matches the name or id of any of the current user's playlists,
+        return the id of that playlist. Otherwise, return None.
+        """
+        out = None
+        for plist in self.all_current_user_playlists():
+            print(plist['name'])
+            if pid in [plist['name'], plist['id']]:
+                out = plist['id']
+                break
+        return out
+
 
 def is_newer(episode, date):
     epdate = episode['release_date']
@@ -63,12 +90,20 @@ def is_newer(episode, date):
 
 
 def main(args):
-    scope = 'playlist-modify-public,playlist-modify-private,user-library-read'
+    scope = 'playlist-read-private,playlist-read-collaborative,playlist-modify-public,playlist-modify-private,user-library-read'
     token = util.prompt_for_user_token(args.username, scope)
 
     if token:
         sp = CustomSpotify(auth=token)
-        sp.trace = False
+        # Figure out which playlist to use
+        pid = sp.user_playlist_id(args.playlist_id)
+        if pid is None:
+            print(f'Unknown playlist "{args.playlist_id}"')
+            return 1
+        # Remove finished episodes and tracks from playlist
+        eps, tracks = sp.all_finished_episodes_and_tracks(pid)
+        sp.remove_all_occurrences_of_tracks_and_episodes(pid, tracks, eps)
+        # Add unread episodes to playlist
         shows = sp.all_user_saved_shows()
         eps = []
         for show in shows:
@@ -84,7 +119,7 @@ def main(args):
         for ep in sorted_eps:
             print(f'{ep["release_date"]} - {ep["show"]["name"]}: {ep["name"]}')
         sp.user_playlist_add_all_episodes(
-            args.username, args.playlist_id,
+            args.username, pid,
             [ep['id'] for ep in sorted_eps])
     else:
         print("Can't get token for", args.username)
