@@ -113,7 +113,6 @@ class CustomSpotify(spotipy.Spotify):
         tracks = [t['track']['id'] for t in eps_and_tracks if t['track']['type'] == 'track']
         eps = [t['track']['id'] for t in eps_and_tracks if t['track']['type'] == 'episode']
         rich_eps = self.all_episodes(eps)
-        print(rich_eps)
         finished_eps = [
             e['id'] for e in rich_eps
             if e['resume_point']['fully_played']]
