@@ -103,7 +103,7 @@ class CustomSpotify(spotipy.Spotify):
     def all_episodes(self, episodes, market=None):
         out = []
         for i in range(0, len(episodes), 50):
-            out += self.episodes(episodes[i:i + 50], market)
+            out += self.episodes(episodes[i:i + 50], market)['episodes']
         return out
 
     def all_finished_episodes_and_tracks(self, playlist_id):
