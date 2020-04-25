@@ -81,10 +81,69 @@ class CustomSpotify(spotipy.Spotify):
                 break
         return out
 
+    def all_playlist_tracks(
+        self,
+        playlist_id,
+        fields=None,
+        market=None,
+        additional_types=("track",)
+    ):
+        out = []
+        offset = 0
+        total = 1
+        while offset < total:
+            results = self.playlist_tracks(
+                playlist_id, fields, 100, offset, market, additional_types)
+            tracks = results['items']
+            total = results['total']
+            offset += len(tracks)
+            out += tracks
+        return tracks
 
-def is_newer(episode, date):
-    epdate = episode['release_date']
-    return epdate >= date
+    def all_episodes(self, episodes, market=None):
+        out = []
+        for i in range(0, len(episodes), 50):
+            out += self.episodes(episodes[i:i + 50], market)
+        return out
+
+    def all_finished_episodes_and_tracks(self, playlist_id):
+        eps_and_tracks = self.all_playlist_tracks(
+            playlist_id,
+            additional_types=('track', 'episode'))
+        tracks = [t['track']['id'] for t in eps_and_tracks if t['track']['type'] == 'track']
+        eps = [t['track']['id'] for t in eps_and_tracks if t['track']['type'] == 'episode']
+        rich_eps = self.all_episodes(eps)
+        print(rich_eps)
+        finished_eps = [
+            e['id'] for e in rich_eps
+            if e['resume_point']['fully_played']]
+        return finished_eps, tracks
+
+    def remove_all_occurrences_of_tracks_and_episodes(
+        self, playlist_id, tracks, episodes, snapshot_id=None
+    ):
+        """ Removes all occurrences of the given tracks from the given playlist
+            Parameters:
+                - user - the id of the user
+                - playlist_id - the id of the playlist
+                - tracks - the list of track ids to remove from the playlist
+                - snapshot_id - optional id of the playlist snapshot
+        """
+
+        plid = self._get_id("playlist", playlist_id)
+        ftracks = [self._get_uri("track", tid) for tid in tracks]
+        ftracks += [self._get_uri("episode", eid) for eid in episodes]
+        out = []
+        for i in range(0, len(ftracks), 100):
+            payload = {
+                "tracks": [{"uri": track}
+                for track in ftracks[i:i + 100]]}
+            if snapshot_id:
+                payload["snapshot_id"] = snapshot_id
+            out.append(self._delete(
+                "users/%s/playlists/%s/tracks" % (user, plid), payload=payload
+            ))
+        return out
 
 
 def main(args):
@@ -101,6 +160,11 @@ def main(args):
         # Remove finished episodes and tracks from playlist
         eps, tracks = sp.all_finished_episodes_and_tracks(pid)
         sp.remove_all_occurrences_of_tracks_and_episodes(pid, tracks, eps)
+
+        # TEST
+        return 1
+        # /TEST
+
         # Add unread episodes to playlist
         shows = sp.all_user_saved_shows()
         eps = []
