@@ -1,6 +1,7 @@
 import argparse
 import spotipy
 import spotipy.util as util
+import sys
 
 
 class CustomSpotify(spotipy.Spotify):
@@ -87,11 +88,12 @@ def main(args):
             [ep['id'] for ep in sorted_eps])
     else:
         print("Can't get token for", args.username)
+        return 1
+    return 0
 
 
 if __name__ == '__main__':
     p = argparse.ArgumentParser()
     p.add_argument('username')
-    p.add_argument('playlist_id')
-    p.add_argument('date')
-    main(p.parse_args())
+    p.add_argument('playlist_id', nargs='?', default='New Podcast Episodes')
+    sys.exit(main(p.parse_args()))
