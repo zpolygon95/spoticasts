@@ -172,7 +172,8 @@ def main(args):
             return 1
         # Remove finished episodes and tracks from playlist
         eps, tracks = sp.all_finished_episodes_and_tracks(pid)
-        sp.remove_all_occurrences_of_tracks_and_episodes(pid, tracks, eps)
+        if eps and tracks:
+            sp.remove_all_occurrences_of_tracks_and_episodes(pid, tracks, eps)
 
         # TEST
         return 1
