@@ -56,6 +56,19 @@ class CustomSpotify(spotipy.Spotify):
             out += episodes
         return out
 
+    def new_show_episodes(self, show_id):
+        """Get all episodes of a show published after the most recent finished
+        episode.
+        """
+        eps = sorted(
+            self.all_show_episodes(show_id),
+            key=lambda x: x['release_date'],
+            reverse=True)
+        for i, ep in enumerate(eps):
+            if ep['resume_point']['fully_played']:
+                return eps[:i]
+        return eps
+
     def all_current_user_playlists(self):
         out = []
         offset = 0
@@ -123,6 +136,18 @@ class CustomSpotify(spotipy.Spotify):
             if e['resume_point']['fully_played']]
         return finished_eps, tracks
 
+    def all_episodes_and_tracks(self, playlist_id):
+        eps_and_tracks = self.all_playlist_tracks(
+            playlist_id,
+            additional_types=('track', 'episode'))
+        tracks = [
+            t['track']['id'] for t in eps_and_tracks
+            if t['track']['type'] == 'track']
+        eps = [
+            t['track']['id'] for t in eps_and_tracks
+            if t['track']['type'] == 'episode']
+        return eps, tracks
+
     def remove_all_occurrences_of_tracks_and_episodes(
         self, playlist_id, tracks, episodes, snapshot_id=None
     ):
@@ -161,6 +186,37 @@ scope = ','.join([
 ])
 
 
+def empty_playlist(sp, pid):
+    eps, tracks = sp.all_episodes_and_tracks(pid)
+    print(f'deleting {len(eps)} episodes and {len(tracks)} tracks...')
+    resp = sp.remove_all_occurrences_of_tracks_and_episodes(pid, tracks, eps)
+    for r in resp:
+        print(r)
+
+
+def refresh_playlist(sp, pid):
+    # Remove finished episodes and tracks from playlist
+    eps, tracks = sp.all_finished_episodes_and_tracks(pid)
+    if eps and tracks:
+        sp.remove_all_occurrences_of_tracks_and_episodes(pid, tracks, eps)
+    # Add unread episodes to playlist
+    shows = sp.all_user_saved_shows()
+    existing_eps = sp.all_episodes_and_tracks(pid)
+    eps = []
+    for show in shows:
+        print(show['show']['name'], show['show']['id'])
+        show_eps = [
+            ep for ep in sp.new_show_episodes(show['show']['id'])
+            if ep['id'] not in existing_eps]
+        for ep in show_eps:
+            ep['show'] = show['show']
+        eps += show_eps
+    sorted_eps = sorted(eps, key=lambda x: x['release_date'])
+    for ep in sorted_eps:
+        print(f'{ep["release_date"]} - {ep["show"]["name"]}: {ep["name"]}')
+    sp.playlist_add_all_episodes(pid, [ep['id'] for ep in sorted_eps])
+
+
 def main(args):
     token = util.prompt_for_user_token(args.username, scope)
 
@@ -171,33 +227,13 @@ def main(args):
         if pid is None:
             print(f'Unknown playlist "{args.playlist_id}"')
             return 1
-        # Remove finished episodes and tracks from playlist
-        eps, tracks = sp.all_finished_episodes_and_tracks(pid)
-        if eps and tracks:
-            sp.remove_all_occurrences_of_tracks_and_episodes(pid, tracks, eps)
-
-        # TEST
-        return 1
-        # /TEST
-
-        # Add unread episodes to playlist
-        shows = sp.all_user_saved_shows()
-        eps = []
-        for show in shows:
-            print(show['show']['name'], show['show']['id'])
-            show_eps = sp.all_show_episodes(show['show']['id'])
-            for ep in show_eps:
-                ep['show'] = show['show']
-            eps += show_eps
-        recent_eps = [
-            ep for ep in eps
-            if is_newer(ep, args.date)]
-        sorted_eps = sorted(recent_eps, key=lambda x: x['release_date'])
-        for ep in sorted_eps:
-            print(f'{ep["release_date"]} - {ep["show"]["name"]}: {ep["name"]}')
-        sp.user_playlist_add_all_episodes(
-            args.username, pid,
-            [ep['id'] for ep in sorted_eps])
+        if args.mode == 'refresh':
+            refresh_playlist(sp, pid)
+        elif args.mode == 'empty':
+            empty_playlist(sp, pid)
+        else:
+            print(f'Unknown mode "{args.mode}"')
+            return 1
     else:
         print("Can't get token for", args.username)
         return 1
@@ -206,6 +242,7 @@ def main(args):
 
 if __name__ == '__main__':
     p = argparse.ArgumentParser()
+    p.add_argument('-m', '--mode', default='refresh')
     p.add_argument('username')
     p.add_argument('playlist_id', nargs='?', default='New Podcast Episodes')
     sys.exit(main(p.parse_args()))
