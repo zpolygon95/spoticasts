@@ -98,7 +98,8 @@ class CustomSpotify(spotipy.Spotify):
             total = results['total']
             offset += len(tracks)
             out += tracks
-        return tracks
+            print(f'offset, total = {offset}, {total}')
+        return out
 
     def all_episodes(self, episodes, market=None):
         out = []
