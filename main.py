@@ -66,7 +66,6 @@ class CustomSpotify(spotipy.Spotify):
             total = results['total']
             offset += len(playlists)
             out += playlists
-            print(total, offset)
         return out
 
     def user_playlist_id(self, pid):
@@ -77,7 +76,6 @@ class CustomSpotify(spotipy.Spotify):
         """
         out = None
         for plist in self.all_current_user_playlists():
-            print(plist['name'])
             if pid in [plist['name'], plist['id']]:
                 out = plist['id']
                 break
