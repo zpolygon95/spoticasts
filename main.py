@@ -125,6 +125,7 @@ class CustomSpotify(spotipy.Spotify):
             Parameters:
                 - user - the id of the user
                 - playlist_id - the id of the playlist
+                - episodes - the list of episode ids to remove from the playlist
                 - tracks - the list of track ids to remove from the playlist
                 - snapshot_id - optional id of the playlist snapshot
         """
@@ -140,7 +141,7 @@ class CustomSpotify(spotipy.Spotify):
             if snapshot_id:
                 payload["snapshot_id"] = snapshot_id
             out.append(self._delete(
-                "users/%s/playlists/%s/tracks" % (user, plid), payload=payload
+                "playlists/%s/tracks" % plid, payload=payload
             ))
         return out
 
