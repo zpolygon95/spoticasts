@@ -5,8 +5,8 @@ import sys
 
 
 class CustomSpotify(spotipy.Spotify):
-    def user_playlist_add_episodes(
-        self, user, playlist_id, eps, position=None
+    def playlist_add_episodes(
+        self, playlist_id, eps, position=None
     ):
         """ Adds episodes to a playlist
             Parameters:
@@ -18,18 +18,17 @@ class CustomSpotify(spotipy.Spotify):
         plid = self._get_id("playlist", playlist_id)
         feps = [self._get_uri("episode", eid) for eid in eps]
         return self._post(
-            "users/%s/playlists/%s/tracks" % (user, plid),
+            "playlists/%s/tracks" % plid,
             payload=feps,
             position=position,
         )
 
-    def user_playlist_add_all_episodes(self, user, playlist_id, eps, limit=100):
+    def playlist_add_all_episodes(self, playlist_id, eps, limit=100):
         """Repeatedly call self.user_playlist_add_episodes if necessary"""
         out = []
         for i in range(0, len(eps), limit):
-            out.append(self.user_playlist_add_episodes(
-                user, playlist_id,
-                eps[i:i + limit]))
+            out.append(self.playlist_add_episodes(
+                playlist_id, eps[i:i + limit]))
         return out
 
     def all_user_saved_shows(self):
