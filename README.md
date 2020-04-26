@@ -63,3 +63,4 @@ playlist! (That's what the `empty` mode was created for)
 
 [1]: https://developer.spotify.com/dashboard/
 [2]: https://spotipy.readthedocs.io/en/stable/
+[3]: https://pipenv-fork.readthedocs.io/en/latest/
