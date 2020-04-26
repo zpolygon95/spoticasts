@@ -241,7 +241,13 @@ def main(args):
 
 if __name__ == '__main__':
     p = argparse.ArgumentParser()
-    p.add_argument('-m', '--mode', default='refresh')
-    p.add_argument('username')
-    p.add_argument('playlist_id', nargs='?', default='New Podcast Episodes')
+    p.add_argument(
+        '-m', '--mode', default='refresh',
+        help='''"empty" to empty the specified playlist.
+        "refresh" to remove finished episodes and add new episodes (default)''')
+    p.add_argument('username', help='The Spotify username')
+    p.add_argument(
+        'playlist_id', nargs='?', default='New Podcast Episodes',
+        help='''The name of id of the playlist to use. "New Podcast Episodes"
+        by default''')
     sys.exit(main(p.parse_args()))
